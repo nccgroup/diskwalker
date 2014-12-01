@@ -1,6 +1,10 @@
-from __future__ import print_function
+# Released as open source by NCC Group Plc - http://www.nccgroup.com/
 
-## This will probably be release under the AGPL later on
+# http://www.github.com/nccgroup/diskwalker
+
+# Licensed under the GNU Affero GPLv3 ( http://www.gnu.org/licenses/agpl-3.0.html )
+
+from __future__ import print_function
 
 import atexit
 import pickle
