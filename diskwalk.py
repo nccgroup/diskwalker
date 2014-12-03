@@ -9,6 +9,7 @@ from __future__ import print_function
 import atexit
 import pickle
 import os
+import stat
 import sys
 import tempfile
 import gzip
@@ -40,6 +41,12 @@ else:
 readable_p = partial(access, mode=os.R_OK)
 writable_p = partial(access, mode=os.W_OK)
 executable_p = partial(access, mode=os.EX_OK)
+
+def setuid_p(f):
+    return os.lstat(f).st_mode & stat.S_ISUID
+
+def setgid_p(f):
+    return os.lstat(f).st_mode & stat.S_ISGID
 
 def owned_by_user(user_id, f):
     return os.lstat(f).st_uid == user_id
