@@ -25,15 +25,17 @@ except ImportError:
     pass
 
 
-if sys.version_info.major > 2:
+if sys.version_info[0] > 2:
     access = partial(os.access, follow_symlinks=False)
     mmap = _mmap
+    gzip_open = gzip.open
 else:
     def access(fname, mode=None):
         return os.access(fname, mode)
 
     from contextlib import closing
     mmap = lambda *args, **kwargs: closing(_mmap(*args, **kwargs))
+    gzip_open = lambda *args: closing(gzip.open(*args))
 
 readable_p = partial(access, mode=os.R_OK)
 writable_p = partial(access, mode=os.W_OK)
@@ -78,8 +80,9 @@ def interesting2_filep(fname):
 def contain_password_filep(fname):
     # to be improved
     if readable_p(fname) and os.lstat(fname).st_size and not os.path.islink(fname):
-        with open(fname, 'rb') as fd, mmap(fd.fileno(), 0, prot=PROT_READ) as mm:
-            return any(mm.find(keyword) != -1 for keyword in [b'assword'])
+        with open(fname, 'rb') as fd:
+            with mmap(fd.fileno(), 0, prot=PROT_READ) as mm:
+                return any(mm.find(keyword) != -1 for keyword in [b'assword'])
 
 def ignore_missing(f):
     def predicate_wrapper(fname):
@@ -93,8 +96,8 @@ def ignore_missing(f):
 
 def get_predicates(suffix):
     l = len(suffix)
-    return {name[:-l]: ignore_missing(fun) for name, fun in
-            globals().items() if name[-l:] == suffix}
+    return dict((name[:-l], ignore_missing(fun)) for name, fun in
+            globals().items() if name[-l:] == suffix)
 
 
 def save_dump(d):
@@ -102,7 +105,7 @@ def save_dump(d):
     tempdir = next(filter(writable_p, chain(preferred_dirs, d['writable_dirs'])))
     outfile = os.path.join(tempdir, 'dump.gz')
 
-    with gzip.open(outfile, 'wb') as out:
+    with gzip_open(outfile, 'wb') as out:
         pickle.dump(d, out)
 
     atexit.register(print, 'the dictionary has been saved in', outfile)
@@ -130,7 +133,7 @@ def extract():
     return d
 
 def load_dump(fname):
-    with gzip.open(fname, 'rb') as f:
+    with gzip_open(fname, 'rb') as f:
         return pickle.load(f)
 
 if __name__ == '__main__':
